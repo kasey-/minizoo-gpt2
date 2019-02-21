@@ -25,7 +25,7 @@ print('Generate text...')
 output = generate(model, bpe, ['From the day forth, my arm'], length=20, top_k=1)
 print(output[0])
 
-@app.route('/gpt--2/generate', methods=["POST"])
+@app.route('/gpt-2/generate', methods=["POST"])
 def answer():
     data = request.get_json()
     output = generate(model, bpe, [data['text']], length=data['size'], top_k=data['top_k'])
