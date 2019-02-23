@@ -3,6 +3,7 @@ import time
 import re
 import os
 import timeit
+import schedule
 
 is_uuid_pkl = re.compile("^[a-f0-9]{40}.pkl$")
 
@@ -63,12 +64,17 @@ def commit_task(task,result,uuid):
     print("Deleting jobs/pending/%s" % (uuid))
     os.remove('jobs/pending/'+uuid)
 
-while True:
-    time.sleep(1)
-    cleanup_old_tasks()
+def generate_text_if_req():
     task_list = os.listdir('jobs/pending')
     task_list = cleanup_task_list(task_list)
     if len(task_list) > 0:
         uuid,task = get_next_task(task_list)
         result = process_task(task,uuid)
         commit_task(task,result,uuid)
+
+if __name__ == "__main__":
+    schedule.every(5).minutes.do(cleanup_old_tasks)
+    schedule.every(1).seconds.do(generate_text_if_req)
+    while True:
+        time.sleep(1)
+        schedule.run_pending()
