@@ -1,11 +1,11 @@
-import pickle
+import json
 import time
 import re
 import os
 import timeit
 import schedule
 
-is_uuid_pkl = re.compile("^[a-f0-9]{40}.pkl$")
+is_uuid_json = re.compile("^[a-f0-9]{64}.json$")
 
 from keras_gpt_2 import load_trained_model_from_checkpoint, get_bpe_from_files, generate
 
@@ -37,13 +37,13 @@ def cleanup_old_tasks(ttl=900):
                 print("Delete too old "+job_path)
 
 def cleanup_task_list(task_list):
-    return list(filter(is_uuid_pkl.search, task_list))
+    return list(filter(is_uuid_json.search, task_list))
 
 def get_next_task(task_list):
     uuid = task_list.pop()
-    infile = open('jobs/pending/'+uuid,'rb')
-    task = pickle.load(infile)
-    infile.close()
+    with open('jobs/pending/'+uuid,'r') as f:
+        task = json.load(f)
+    f.close()
     return uuid,task
 
 def process_task(task,uuid):
@@ -57,10 +57,10 @@ def process_task(task,uuid):
 
 def commit_task(task,result,uuid):
     print("Saving jobs/done/%s" % (uuid))
-    outfile = open('jobs/done/'+uuid,'wb')
     payload = {'task':task, 'result':result, 'uuid':uuid}
-    pickle.dump(payload,outfile)
-    outfile.close()
+    with open('jobs/done/'+uuid,'w') as f:
+        json.dump(payload,f)
+    f.close()
     print("Deleting jobs/pending/%s" % (uuid))
     os.remove('jobs/pending/'+uuid)
 

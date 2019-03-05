@@ -5,41 +5,41 @@ from flask import request
 from flask import jsonify
 
 from os import path, remove
-import pickle
+import json
 import hashlib
 import re
 
-is_uuid_correct = re.compile("^[a-f0-9]{40}$")
+is_uuid_correct = re.compile("^[a-f0-9]{64}$")
 
 app = Flask(__name__)
 CORS(app)
 
 def save_task(text,length=200,top_k=1):
     uuid = "%s%s%s" % (text,length,top_k)
-    uuid = hashlib.sha1(uuid.encode('utf-8')).hexdigest()
+    uuid = hashlib.sha256(uuid.encode('utf-8')).hexdigest()
     task = {'text':text,'length':length,'top_k':top_k}
-    outfile = open('jobs/pending/'+uuid+'.pkl','wb')
-    pickle.dump(task,outfile)
-    outfile.close()
+    with open('jobs/pending/'+uuid+'.json','w') as f:
+        json.dump(task,f)
+    f.close()
     print("Next task saved in "+uuid)
     return uuid
 
 def get_task_status(uuid):
-    if path.isfile('jobs/pending/'+uuid+'.pkl'):
+    if path.isfile('jobs/pending/'+uuid+'.json'):
         return 'pending'
-    elif path.isfile('jobs/done/'+uuid+'.pkl'):
+    elif path.isfile('jobs/done/'+uuid+'.json'):
         return 'done'
     else:
         return '404'
 
 def get_task_result(uuid):
-    infile = open('jobs/done/'+uuid+'.pkl','rb')
-    task = pickle.load(infile)
-    infile.close()
+    with open('jobs/done/'+uuid+'.json','r') as f:
+        task = json.load(f)
+    f.close()
     return task
 
 def del_task_result(uuid):
-    return remove('jobs/done/'+uuid+'.pkl')
+    return remove('jobs/done/'+uuid+'.json')
 
 @app.route('/gpt-2/generate', methods=["POST"])
 def answer():
